@@ -1,4 +1,7 @@
-package test.test;
+package com.tatsuyuki;
+
+import java.awt.BorderLayout;
+import java.awt.EventQueue;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GraphicsConfiguration;
@@ -8,137 +11,134 @@ import java.awt.HeadlessException;
 import java.awt.Image;
 import java.awt.RenderingHints;
 import java.awt.Transparency;
+
+import javax.swing.ImageIcon;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.border.EmptyBorder;
+import javax.swing.JLabel;
+import javax.swing.JButton;
+import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
 import java.awt.image.PixelGrabber;
 import java.awt.image.WritableRaster;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.InetAddress;
-import javax.imageio.ImageIO;
-import javax.swing.ImageIcon;
-import com.googlecode.javacv.OpenCVFrameGrabber;
-import com.googlecode.javacv.cpp.opencv_core.IplImage;
-import static com.googlecode.javacv.cpp.opencv_core.cvReleaseImage;
+import java.net.SocketException;
 
-public class CameraCapture
+public class test extends JFrame
 {
-	private CanvasFrame canvasFrame;
-	public static void main(String[] args) throws Exception
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -5374463333342657790L;
+
+	private JPanel contentPane;
+
+	/**
+	 * Launch the application.
+	 */
+	DatagramPacket packet;
+	DatagramSocket socket;
+	byte buffer[];
+	JLabel lblTest;
+
+	public static void main(String[] args)
 	{
-		CameraCapture cc = new CameraCapture();
-		cc.openMyWebcam();
-	}
-	public void openInWebcam()
-	{
-		new Thread(new Runnable()
+		EventQueue.invokeLater(new Runnable()
 		{
 			public void run()
 			{
 				try
 				{
-					DatagramSocket socket = new DatagramSocket(8810);
+					test frame = new test();
+					frame.setVisible(true);
+				} catch(Exception e)
+				{
+					e.printStackTrace();
+				}
+			}
+		});
+	}
+
+	/**
+	 * Create the frame.
+	 */
+	public test()
+	{
+		buffer = new byte[555555];
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setBounds(100,100,476,390);
+		contentPane = new JPanel();
+		contentPane.setBorder(new EmptyBorder(5,5,5,5));
+		contentPane.setLayout(new BorderLayout(0,0));
+		setContentPane(contentPane);
+
+		lblTest = new JLabel();
+		contentPane.add(lblTest,BorderLayout.CENTER);
+
+		JButton btnStart = new JButton("start");
+		btnStart.addActionListener(new ActionListener()
+		{
+			public void actionPerformed(ActionEvent e)
+			{
+				packet = new DatagramPacket(buffer,buffer.length);
+				try
+				{
+					socket = new DatagramSocket(8809);
 					socket.setReceiveBufferSize(131070);
-					byte[] buffer = new byte[65535];
-					DatagramPacket packet = new DatagramPacket(buffer,buffer.length);
-
-					while(true)
-					{
-						socket.receive(packet);
-						ByteArrayInputStream bais = new ByteArrayInputStream(buffer,
-								0,packet.getLength());
-						ObjectInputStream ois = new ObjectInputStream(bais);
-						Object o = ois.readObject();
-						campacket p = (campacket) o;
-						Image imgs = canvasFrame.createImage(p.getData());
-						BufferedImage bi = toBufferedImage(imgs);
-						bi = rotateImage(bi,-90);
-						bi = resize(bi,320,240);
-						CanvasFrame.lblInvideo.setIcon(new ImageIcon(bi));
-					}
-				}catch(Exception e)
+					t.start();
+				} catch(SocketException e1)
 				{
-					e.printStackTrace();
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
 				}
 			}
-		}).start();
+		});
+		contentPane.add(btnStart,BorderLayout.EAST);
 	}
-	public void openMyWebcam()throws Exception
+
+	public void setImage()
 	{
-		new Thread(new Runnable()
+		try
 		{
-			public void run()
-			{
-				try
-				{
-					// open camera source
-					OpenCVFrameGrabber grabber = new OpenCVFrameGrabber(0);
-					grabber.setImageHeight(160);
-					grabber.setImageWidth(240);
-					grabber.start();
-					// create a frame for real-time image display
-					canvasFrame = new CanvasFrame("Camera");
-					IplImage image = grabber.grab();
-					int width = image.width();
-					int height = image.height();
-					System.out.println(width+" "+height);
-					openInWebcam();
-					final BufferedImage bImage = new BufferedImage(width,height,
-							BufferedImage.TYPE_INT_RGB);
-					Graphics2D bGraphics = bImage.createGraphics();
-					// real-time image display
-					while(canvasFrame.isVisible() && (image = grabber.grab()) != null)
-					{
-						if(true)
-						{ 
-							bGraphics.drawImage(image.getBufferedImage(),null,0,0);
-							byte[]b = imageToBytes(bImage,"jpg");
-							CanvasFrame.lblVideo.setIcon(new ImageIcon(bImage));
-							System.out.println(b.length);
-							DatagramSocket socket = new DatagramSocket();
-							InetAddress iddr = InetAddress.getByName("192.168.1.102");
-							ByteArrayOutputStream bao = new ByteArrayOutputStream();
-							ObjectOutputStream oos = new ObjectOutputStream(
-									bao);
-							campacket p = new campacket(b);
-							oos.writeObject(p);
-							byte[] buffer = bao.toByteArray();
-							DatagramPacket packet = new DatagramPacket(buffer,
-									buffer.length,iddr,8809);
-							socket.setSendBufferSize(131070);
-							socket.send(packet);
-						}
-					}
-					cvReleaseImage(image);
-					grabber.stop();
-				}catch(Exception e)
-				{
-					e.printStackTrace();
-				}
-			}
-		}).start();
+			socket.receive(packet);
+			ByteArrayInputStream bais = new ByteArrayInputStream(buffer,0,
+					packet.getLength());
+			ObjectInputStream ois = new ObjectInputStream(bais);
+			Object o = ois.readObject();
+			campacket p = (campacket) o;
+			Image imgs = getToolkit().createImage(p.getData());
+			
+			BufferedImage bi = toBufferedImage(imgs);
+			bi = rotateImage(bi,-90);
+			bi = resize(bi,320,240);
+			lblTest.setIcon(new ImageIcon(bi));
+		} catch(IOException | ClassNotFoundException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
-	public static byte[] imageToBytes(Image image, String format) {
-		 BufferedImage bImage = new BufferedImage(image.getWidth(null), image
-		 .getHeight(null), BufferedImage.TYPE_INT_RGB);
-		 Graphics bg = bImage.getGraphics();
-		 bg.drawImage(image, 0, 0, null);
-		 bg.dispose();
 
-		 ByteArrayOutputStream out = new ByteArrayOutputStream();
-		 try {
-		 ImageIO.write(bImage, format, out);
-		 } catch (IOException e) {
-		 e.printStackTrace();
-		 }
-		 return out.toByteArray();
-		 }  
+	Thread t = new Thread(new Runnable()
+	{
+		public void run()
+		{
+			while(true)
+			{
+				setImage();
+			}
+		}
+	});
+
 	// This method returns a buffered image with the contents of an image
 	public static BufferedImage toBufferedImage(Image image)
 	{

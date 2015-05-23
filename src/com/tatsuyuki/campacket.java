@@ -1,4 +1,4 @@
-package test.test;
+package com.tatsuyuki;
 
 import java.io.Serializable;
 

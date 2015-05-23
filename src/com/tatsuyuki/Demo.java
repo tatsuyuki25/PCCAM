@@ -1,4 +1,4 @@
-package test.test;
+package com.tatsuyuki;
 
 import com.googlecode.javacpp.Loader; 
 import com.googlecode.javacv.*; 
